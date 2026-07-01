@@ -28,6 +28,16 @@ npm run dev
 
 Server runs at `http://localhost:5000` by default.
 
+## Postman Collection
+
+Import the ready-made collection:
+
+```
+backend/postman/Next-Waves-Lead-API.postman_collection.json
+```
+
+In Postman: **Import** → select the file → run requests top to bottom. The collection auto-saves `token`, `apiKey`, and `leadId` from responses.
+
 ## Quick Test (no MongoDB install needed)
 
 ```bash

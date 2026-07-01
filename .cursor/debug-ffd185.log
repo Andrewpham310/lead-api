@@ -1,0 +1,2 @@
+{"sessionId":"ffd185","location":"server.js:startServer","message":"attempting listen","data":{"pid":16972,"port":"5000"},"timestamp":1782704804892,"hypothesisId":"H1"}
+{"sessionId":"ffd185","location":"server.js:listen","message":"server started","data":{"pid":16972,"port":"5000"},"timestamp":1782704804917,"hypothesisId":"H1"}

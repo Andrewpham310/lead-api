@@ -43,8 +43,19 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   await connectDB();
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(
+        `Port ${PORT} is already in use. Stop the other process (e.g. another "npm run dev") or run: npx kill-port ${PORT}`
+      );
+    } else {
+      console.error(`Server error: ${err.message}`);
+    }
+    process.exit(1);
   });
 };
 
