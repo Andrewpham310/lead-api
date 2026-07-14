@@ -57,4 +57,19 @@ Open `http://localhost:5173`.
 npm run build
 ```
 
-Deploy the `dist/` folder to Vercel and set `VITE_API_URL` to your Render backend URL.
+Deploy to Vercel with:
+
+| Setting | Value |
+|---------|-------|
+| Root Directory | `frontend` |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+| Env | `VITE_API_URL` = your Render API URL (e.g. `https://lead-api-1.onrender.com`) |
+
+[`vercel.json`](vercel.json) rewrites all routes to `index.html` so React Router pages like `/lead-form` work when opened directly.
+
+After deploy, the form link looks like:
+
+```text
+https://your-app.vercel.app/lead-form?key=nw_live_...
+```
