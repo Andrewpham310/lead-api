@@ -31,6 +31,14 @@
     {
       "key": "leadId",
       "value": ""
+    },
+    {
+      "key": "ownerLeadId",
+      "value": ""
+    },
+    {
+      "key": "noteId",
+      "value": ""
     }
   ],
   "item": [
@@ -397,8 +405,46 @@
       ]
     },
     {
-      "name": "5. Leads (Protected)",
+      "name": "5. Leads (Owner)",
       "item": [
+        {
+          "name": "Create Lead Manually",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const lead = pm.response.json();",
+                  "    pm.collectionVariables.set('ownerLeadId', lead._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sarah Johnson\",\n  \"phone\": \"4165551234\",\n  \"email\": \"sarah@example.com\",\n  \"source\": \"instagram\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/leads/owner",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "leads", "owner"]
+            },
+            "description": "Create a lead manually (doesn't count toward API limit). Message is optional."
+          },
+          "response": []
+        },
         {
           "name": "List Leads",
           "event": [
@@ -456,6 +502,40 @@
           "response": []
         },
         {
+          "name": "Update Lead Details",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Smith Jr.\",\n  \"phone\": \"4165559999\",\n  \"status\": \"contacted\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/leads/{{leadId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "leads", "{{leadId}}"]
+            },
+            "description": "Update any lead field (name, phone, email, message, source, status)."
+          },
+          "response": []
+        },
+        {
           "name": "Update Lead Status",
           "event": [
             {
@@ -487,6 +567,60 @@
               "path": ["api", "leads", "{{leadId}}", "status"]
             },
             "description": "Update lead status. Valid: new, contacted, booked, lost."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Follow-up Note",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const lead = pm.response.json();",
+                  "    if (lead.followUpNotes && lead.followUpNotes.length > 0) {",
+                  "        pm.collectionVariables.set('noteId', lead.followUpNotes[0]._id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Called, left voicemail\",\n  \"updateLastContacted\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/leads/{{leadId}}/notes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "leads", "{{leadId}}", "notes"]
+            },
+            "description": "Add a follow-up note. Set updateLastContacted to update lastContactedAt timestamp."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Follow-up Note",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/leads/{{leadId}}/notes/{{noteId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "leads", "{{leadId}}", "notes", "{{noteId}}"]
+            },
+            "description": "Delete a specific follow-up note by ID."
           },
           "response": []
         },

@@ -168,7 +168,135 @@ const run = async () => {
   assert(analytics.data.usageThisMonth === 1, 'usageThisMonth should be 1');
   console.log('✓ GET /api/analytics/summary');
 
-  // 12. Delete lead
+  // 12. Create lead as owner (manual entry)
+  const createOwnerLead = await request(baseUrl, 'POST', '/api/leads/owner', {
+    headers: { Authorization: `Bearer ${token}` },
+    body: {
+      name: 'Jane Doe',
+      phone: '4169876543',
+      email: 'jane@example.com',
+      source: 'instagram',
+    },
+  });
+  assert(createOwnerLead.status === 201, 'Create owner lead failed');
+  console.log('✓ POST /api/leads/owner (manual entry)');
+
+  const ownerLeadId = createOwnerLead.data._id;
+
+  // 13. Verify manual lead doesn't count toward API usage
+  const analyticsAfterManual = await request(
+    baseUrl,
+    'GET',
+    '/api/analytics/summary',
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  assert(
+    analyticsAfterManual.data.usageThisMonth === 1,
+    'Manual lead should not count toward API usage'
+  );
+  console.log('✓ Manual lead does not count toward API usage');
+
+  // 14. Update lead details
+  const updateLeadDetails = await request(baseUrl, 'PATCH', `/api/leads/${ownerLeadId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    body: {
+      name: 'Jane Smith',
+      phone: '4169999999',
+      status: 'contacted',
+    },
+  });
+  assert(updateLeadDetails.status === 200, 'Update lead failed');
+  assert(updateLeadDetails.data.name === 'Jane Smith', 'Name not updated');
+  assert(updateLeadDetails.data.status === 'contacted', 'Status not updated');
+  console.log('✓ PATCH /api/leads/:id (update details)');
+
+  // 15. Add follow-up note
+  const addNote = await request(baseUrl, 'POST', `/api/leads/${ownerLeadId}/notes`, {
+    headers: { Authorization: `Bearer ${token}` },
+    body: {
+      text: 'Called, left voicemail',
+      updateLastContacted: true,
+    },
+  });
+  assert(addNote.status === 201, 'Add note failed');
+  assert(addNote.data.followUpNotes.length === 1, 'Note not added');
+  assert(addNote.data.lastContactedAt, 'lastContactedAt not set');
+  console.log('✓ POST /api/leads/:id/notes');
+
+  const noteId = addNote.data.followUpNotes[0]._id;
+
+  // 16. Add another note
+  const addNote2 = await request(baseUrl, 'POST', `/api/leads/${ownerLeadId}/notes`, {
+    headers: { Authorization: `Bearer ${token}` },
+    body: {
+      text: 'Followed up via email',
+      updateLastContacted: false,
+    },
+  });
+  assert(addNote2.status === 201, 'Add second note failed');
+  assert(addNote2.data.followUpNotes.length === 2, 'Second note not added');
+  console.log('✓ POST /api/leads/:id/notes (second note)');
+
+  // 17. Delete a note
+  const deleteNote = await request(
+    baseUrl,
+    'DELETE',
+    `/api/leads/${ownerLeadId}/notes/${noteId}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    }
+  );
+  assert(deleteNote.status === 200, 'Delete note failed');
+  assert(deleteNote.data.followUpNotes.length === 1, 'Note not deleted');
+  console.log('✓ DELETE /api/leads/:id/notes/:noteId');
+
+  // 18. Cross-business access test (register second user)
+  const register2 = await request(baseUrl, 'POST', '/api/auth/register', {
+    body: {
+      name: 'Bob',
+      email: 'bob@example.com',
+      password: 'password456',
+    },
+  });
+  assert(register2.status === 201, 'Second register failed');
+  const token2 = register2.data.token;
+
+  const business2 = await request(baseUrl, 'POST', '/api/business', {
+    headers: { Authorization: `Bearer ${token2}` },
+    body: {
+      businessName: 'Bob Shop',
+      industry: 'retail',
+    },
+  });
+  assert(business2.status === 201, 'Second business failed');
+  console.log('✓ Created second business for cross-business test');
+
+  // 19. Try to access another business's lead
+  const crossAccess = await request(baseUrl, 'GET', `/api/leads/${ownerLeadId}`, {
+    headers: { Authorization: `Bearer ${token2}` },
+  });
+  assert(crossAccess.status === 404, 'Cross-business access should return 404');
+  console.log('✓ Cross-business access correctly rejected (404)');
+
+  // 20. Try to update another business's lead
+  const crossUpdate = await request(baseUrl, 'PATCH', `/api/leads/${ownerLeadId}`, {
+    headers: { Authorization: `Bearer ${token2}` },
+    body: { name: 'Hacked' },
+  });
+  assert(crossUpdate.status === 404, 'Cross-business update should return 404');
+  console.log('✓ Cross-business update correctly rejected (404)');
+
+  // 21. Try to add note to another business's lead
+  const crossNote = await request(baseUrl, 'POST', `/api/leads/${ownerLeadId}/notes`, {
+    headers: { Authorization: `Bearer ${token2}` },
+    body: { text: 'Hacked note' },
+  });
+  assert(crossNote.status === 404, 'Cross-business note should return 404');
+  console.log('✓ Cross-business note correctly rejected (404)');
+
+  // 22. Delete original lead
   const deleteLead = await request(baseUrl, 'DELETE', `/api/leads/${leadId}`, {
     headers: { Authorization: `Bearer ${token}` },
   });

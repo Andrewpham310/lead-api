@@ -1,5 +1,18 @@
 const mongoose = require('mongoose');
 
+const noteSchema = new mongoose.Schema(
+  {
+    text: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
 const leadSchema = new mongoose.Schema(
   {
     businessId: {
@@ -23,7 +36,6 @@ const leadSchema = new mongoose.Schema(
     },
     message: {
       type: String,
-      required: [true, 'Message is required'],
       trim: true,
     },
     source: {
@@ -34,6 +46,16 @@ const leadSchema = new mongoose.Schema(
       type: String,
       enum: ['new', 'contacted', 'booked', 'lost'],
       default: 'new',
+    },
+    followUpNotes: {
+      type: [noteSchema],
+      default: [],
+    },
+    lastContactedAt: {
+      type: Date,
+    },
+    nextFollowUpDate: {
+      type: Date,
     },
   },
   {
