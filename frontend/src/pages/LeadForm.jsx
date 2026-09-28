@@ -5,6 +5,11 @@ import { submitLeadPublic } from '../api/leads';
 export default function LeadForm() {
   const [searchParams] = useSearchParams();
   const apiKey = searchParams.get('key') || '';
+  const source = searchParams.get('source') || undefined;
+  const utmSource = searchParams.get('utm_source') || undefined;
+  const utmMedium = searchParams.get('utm_medium') || undefined;
+  const utmCampaign = searchParams.get('utm_campaign') || undefined;
+  const referrer = document.referrer || undefined;
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -20,7 +25,17 @@ export default function LeadForm() {
     setSubmitting(true);
 
     try {
-      await submitLeadPublic(apiKey, { name, phone, email, message });
+      await submitLeadPublic(apiKey, {
+        name,
+        phone,
+        email,
+        message,
+        source,
+        utmSource,
+        utmMedium,
+        utmCampaign,
+        referrer,
+      });
       setSubmitted(true);
       setName('');
       setPhone('');

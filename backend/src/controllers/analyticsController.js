@@ -16,12 +16,17 @@ const getSummary = async (req, res, next) => {
 
     const businessId = business._id;
 
-    const [newLeads, contactedLeads, bookedLeads, lostLeads] =
+    const [newLeads, contactedLeads, bookedLeads, lostLeads, leadsBySource] =
       await Promise.all([
         Lead.countDocuments({ businessId, status: 'new' }),
         Lead.countDocuments({ businessId, status: 'contacted' }),
         Lead.countDocuments({ businessId, status: 'booked' }),
         Lead.countDocuments({ businessId, status: 'lost' }),
+        Lead.aggregate([
+          { $match: { businessId } },
+          { $group: { _id: '$source', count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+        ]),
       ]);
 
     res.json({
@@ -33,6 +38,10 @@ const getSummary = async (req, res, next) => {
       usageThisMonth: business.usageThisMonth,
       monthlyLimit: business.monthlyLimit,
       plan: business.plan,
+      leadsBySource: leadsBySource.map((item) => ({
+        source: item._id,
+        count: item.count,
+      })),
     });
   } catch (error) {
     next(error);

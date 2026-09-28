@@ -1,11 +1,11 @@
 const STATUS_OPTIONS = ['new', 'contacted', 'booked', 'lost'];
 
-export default function LeadTable({ leads, onStatusChange, onDelete }) {
+export default function LeadTable({ leads, onStatusChange, onDelete, onView }) {
   if (!leads.length) {
     return (
       <div className="empty-state">
         <h3>No leads yet</h3>
-        <p>Share your API key on your website to start collecting inquiries.</p>
+        <p>Add leads manually or share your API key on your website to start collecting inquiries.</p>
       </div>
     );
   }
@@ -26,7 +26,7 @@ export default function LeadTable({ leads, onStatusChange, onDelete }) {
         </thead>
         <tbody>
           {leads.map((lead) => (
-            <tr key={lead._id}>
+            <tr key={lead._id} className="clickable-row" onClick={() => onView(lead._id)}>
               <td>
                 <strong>{lead.name}</strong>
               </td>
@@ -36,9 +36,11 @@ export default function LeadTable({ leads, onStatusChange, onDelete }) {
                   {lead.phone && <span>{lead.phone}</span>}
                 </div>
               </td>
-              <td className="message-cell">{lead.message}</td>
-              <td>{lead.source}</td>
+              <td className="message-cell">{lead.message || <span className="muted">—</span>}</td>
               <td>
+                <span className="source-badge">{lead.source}</span>
+              </td>
+              <td onClick={(e) => e.stopPropagation()}>
                 <select
                   className={`status-select status-${lead.status}`}
                   value={lead.status}
@@ -52,7 +54,7 @@ export default function LeadTable({ leads, onStatusChange, onDelete }) {
                 </select>
               </td>
               <td>{new Date(lead.createdAt).toLocaleDateString()}</td>
-              <td>
+              <td onClick={(e) => e.stopPropagation()}>
                 <button
                   type="button"
                   className="btn btn-danger btn-sm"

@@ -28,6 +28,62 @@ npm run dev
 
 Server runs at `http://localhost:5000` by default.
 
+## Manual Lead Entry & Follow-up Notes
+
+### Design Decisions
+
+**Manual lead entry (`POST /api/leads/owner`):**
+
+- Business owners can create leads directly from the dashboard for non-website sources (phone calls, walk-ins, social media DMs, referrals, etc.)
+- The `message` field is **optional** for manual leads (unlike public API submissions)
+- Manual leads **do NOT count** toward the monthly API usage limit (only increments `leadCount`, not `usageThisMonth`)
+- Source can be any string (preset options: website, instagram, facebook, phone, referral, walk-in, other)
+
+**Lead editing (`PATCH /api/leads/:id`):**
+
+- Owners can edit any field of their own leads: name, phone, email, message, source, status
+- Useful for correcting typos or updating information after follow-up calls
+
+**Follow-up notes (`POST /api/leads/:id/notes`, `DELETE /api/leads/:id/notes/:noteId`):**
+
+- Each lead has a timeline of follow-up notes (e.g., "Called, left voicemail")
+- Notes are timestamped automatically
+- Optional `updateLastContacted` flag updates the lead's `lastContactedAt` field
+- Notes are displayed newest first in the UI
+- Future enhancement: `nextFollowUpDate` can be used for reminders
+
+**Security:**
+
+- All owner routes validate that the lead belongs to the authenticated user's business
+- Cross-business access is blocked (returns 404)
+
+## Source Tracking
+
+Track where every lead comes from to understand which marketing channels are most effective.
+
+**Features:**
+
+1. **Query parameter tracking**: Add `?source=instagram` to form links to automatically tag leads
+2. **UTM parameter capture**: Automatically captures `utm_source`, `utm_medium`, `utm_campaign` from public submissions
+3. **Referrer tracking**: Captures the referring page URL when available
+4. **Source normalization**: All sources are normalized (lowercase, trimmed, max 50 chars) for consistent reporting
+5. **Filtering**: Filter leads by source via `GET /api/leads?source=instagram`
+6. **Analytics**: View leads-by-source breakdown in `GET /api/analytics/summary`
+
+**Known sources:**
+
+`website`, `instagram`, `facebook`, `google`, `linkedin`, `twitter`, `tiktok`, `email`, `phone`, `referral`, `walk-in`, `other`
+
+**Example form URL with source:**
+
+```
+https://yourdomain.com/lead-form?key=nw_live_abc123&source=instagram
+```
+
+**Link builder:**
+
+The Business settings page includes an interactive link builder where owners can select a source and copy a ready-made form link for that channel.
+
 ## Postman Collection
 
 Import the ready-made collection:
@@ -60,12 +116,18 @@ Runs the full Postman-style flow against an in-memory MongoDB.
 | GET | `/api/business/me` | JWT | Get own business |
 | PATCH | `/api/business/me` | JWT | Update business profile |
 | POST | `/api/business/regenerate-api-key` | JWT | Generate new API key |
-| POST | `/api/leads` | `x-api-key` header | Public lead submission |
+| POST | `/api/leads` | `x-api-key` header | Public lead submission (counts toward limit) |
+| POST | `/api/leads/owner` | JWT | Create lead manually (doesn't count toward limit) |
 | GET | `/api/leads` | JWT | List own leads |
+| GET | `/api/leads?source=instagram` | JWT | Filter leads by source |
 | GET | `/api/leads/:id` | JWT | Get one lead |
+| PATCH | `/api/leads/:id` | JWT | Update lead details |
 | PATCH | `/api/leads/:id/status` | JWT | Update lead status |
 | DELETE | `/api/leads/:id` | JWT | Delete lead |
-| GET | `/api/analytics/summary` | JWT | Dashboard stats |
+| POST | `/api/leads/:id/notes` | JWT | Add follow-up note |
+| DELETE | `/api/leads/:id/notes/:noteId` | JWT | Delete follow-up note |
+| GET | `/api/analytics/summary` | JWT | Dashboard stats with source breakdown |
+| GET | `/api/sources` | None | Get list of known source options |
 
 ---
 

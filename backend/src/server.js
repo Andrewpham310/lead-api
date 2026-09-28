@@ -10,6 +10,7 @@ const authRoutes = require('./routes/authRoutes');
 const businessRoutes = require('./routes/businessRoutes');
 const leadRoutes = require('./routes/leadRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const sourceRoutes = require('./routes/sourceRoutes');
 
 const app = express();
 
@@ -28,6 +29,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/business', businessRoutes);
 app.use('/api/leads', leadRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/sources', sourceRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
