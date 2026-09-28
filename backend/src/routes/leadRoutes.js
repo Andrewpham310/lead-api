@@ -27,6 +27,10 @@ const submitLeadValidation = [
     .withMessage('Valid email is required'),
   body('phone').optional({ values: 'falsy' }).trim(),
   body('source').optional({ values: 'falsy' }).trim(),
+  body('utmSource').optional({ values: 'falsy' }).trim(),
+  body('utmMedium').optional({ values: 'falsy' }).trim(),
+  body('utmCampaign').optional({ values: 'falsy' }).trim(),
+  body('referrer').optional({ values: 'falsy' }).trim(),
 ];
 
 const createLeadValidation = [

@@ -1,10 +1,23 @@
 import { apiRequest } from './client';
 
-export function submitLeadPublic(apiKey, { name, phone, email, message, source }) {
+export function submitLeadPublic(
+  apiKey,
+  { name, phone, email, message, source, utmSource, utmMedium, utmCampaign, referrer }
+) {
   return apiRequest('/api/leads', {
     method: 'POST',
     headers: { 'x-api-key': apiKey },
-    body: { name, phone, email, message, source: source || 'website' },
+    body: {
+      name,
+      phone,
+      email,
+      message,
+      source,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      referrer,
+    },
   });
 }
 
@@ -16,8 +29,8 @@ export function createLeadAsOwner(token, { name, phone, email, message, source }
   });
 }
 
-export function getLeads(token) {
-  return apiRequest('/api/leads', { token });
+export function getLeads(token, url = '/api/leads') {
+  return apiRequest(url, { token });
 }
 
 export function getLeadById(token, id) {

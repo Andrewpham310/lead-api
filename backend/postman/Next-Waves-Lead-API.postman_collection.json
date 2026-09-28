@@ -362,6 +362,49 @@
           "response": []
         },
         {
+          "name": "Submit Lead - With Source & UTM",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Success true', () => pm.expect(pm.response.json().success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-api-key",
+                "value": "{{apiKey}}",
+                "description": "Business API key (not JWT)"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sarah Johnson\",\n  \"phone\": \"4165559999\",\n  \"email\": \"sarah@example.com\",\n  \"message\": \"Saw your ad on Instagram\",\n  \"source\": \"instagram\",\n  \"utmSource\": \"instagram\",\n  \"utmMedium\": \"social\",\n  \"utmCampaign\": \"spring2026\",\n  \"referrer\": \"https://instagram.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/leads",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "leads"]
+            },
+            "description": "Public lead submission with source tracking and UTM parameters."
+          },
+          "response": []
+        },
+        {
           "name": "Submit Lead - Invalid API Key",
           "event": [
             {
@@ -473,6 +516,38 @@
               "path": ["api", "leads"]
             },
             "description": "List all leads for your business. Auto-saves first lead ID to {{leadId}}."
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Leads by Source",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/leads?source=instagram",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "leads"],
+              "query": [
+                {
+                  "key": "source",
+                  "value": "instagram",
+                  "description": "Filter by source (lowercase)"
+                }
+              ]
+            },
+            "description": "Filter leads by source channel. Source is case-insensitive."
           },
           "response": []
         },
@@ -652,7 +727,44 @@
       ]
     },
     {
-      "name": "6. Analytics",
+      "name": "6. Sources",
+      "item": [
+        {
+          "name": "Get Source Options",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Returns sources array', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('sources');",
+                  "    pm.expect(pm.response.json().sources).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/sources",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "sources"]
+            },
+            "description": "Get list of known source options (public endpoint)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Analytics",
       "item": [
         {
           "name": "Analytics Summary",
@@ -662,7 +774,11 @@
               "script": {
                 "exec": [
                   "pm.test('Status is 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Has totalLeads', () => pm.expect(pm.response.json()).to.have.property('totalLeads'));"
+                  "pm.test('Has totalLeads', () => pm.expect(pm.response.json()).to.have.property('totalLeads'));",
+                  "pm.test('Has leadsBySource', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('leadsBySource');",
+                  "    pm.expect(pm.response.json().leadsBySource).to.be.an('array');",
+                  "});"
                 ],
                 "type": "text/javascript"
               }

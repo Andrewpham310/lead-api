@@ -1,6 +1,7 @@
 const Business = require('../models/Business');
 const Lead = require('../models/Lead');
 const { getCurrentMonthKey } = require('./businessController');
+const { normalizeSource } = require('../utils/sourceUtils');
 
 const getBusinessForOwner = async (ownerId) => {
   return Business.findOne({ ownerId });
@@ -33,7 +34,8 @@ const submitLead = async (req, res, next) => {
       });
     }
 
-    const { name, phone, email, message, source } = req.body;
+    const { name, phone, email, message, source, utmSource, utmMedium, utmCampaign, referrer } =
+      req.body;
 
     await Lead.create({
       businessId: business._id,
@@ -41,7 +43,11 @@ const submitLead = async (req, res, next) => {
       phone,
       email,
       message,
-      source: source || 'website',
+      source: normalizeSource(source),
+      utmSource: utmSource ? utmSource.trim().substring(0, 100) : undefined,
+      utmMedium: utmMedium ? utmMedium.trim().substring(0, 100) : undefined,
+      utmCampaign: utmCampaign ? utmCampaign.trim().substring(0, 100) : undefined,
+      referrer: referrer ? referrer.trim().substring(0, 500) : undefined,
     });
 
     await Business.findByIdAndUpdate(business._id, {
@@ -61,7 +67,7 @@ const submitLead = async (req, res, next) => {
 };
 
 // @desc    Get all leads for the logged-in owner's business
-// @route   GET /api/leads
+// @route   GET /api/leads?source=instagram
 const getLeads = async (req, res, next) => {
   try {
     const business = await getBusinessForOwner(req.user.id);
@@ -73,7 +79,13 @@ const getLeads = async (req, res, next) => {
       });
     }
 
-    const leads = await Lead.find({ businessId: business._id }).sort({
+    const query = { businessId: business._id };
+
+    if (req.query.source) {
+      query.source = normalizeSource(req.query.source);
+    }
+
+    const leads = await Lead.find(query).sort({
       createdAt: -1,
     });
 
@@ -203,7 +215,7 @@ const createLeadAsOwner = async (req, res, next) => {
       phone,
       email,
       message,
-      source: source || 'other',
+      source: normalizeSource(source || 'other'),
     });
 
     await Business.findByIdAndUpdate(business._id, {
@@ -247,7 +259,7 @@ const updateLead = async (req, res, next) => {
     if (phone !== undefined) lead.phone = phone;
     if (email !== undefined) lead.email = email;
     if (message !== undefined) lead.message = message;
-    if (source !== undefined) lead.source = source;
+    if (source !== undefined) lead.source = normalizeSource(source);
     if (status !== undefined) lead.status = status;
 
     await lead.save();

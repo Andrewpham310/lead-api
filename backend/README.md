@@ -57,6 +57,33 @@ Server runs at `http://localhost:5000` by default.
 - All owner routes validate that the lead belongs to the authenticated user's business
 - Cross-business access is blocked (returns 404)
 
+## Source Tracking
+
+Track where every lead comes from to understand which marketing channels are most effective.
+
+**Features:**
+
+1. **Query parameter tracking**: Add `?source=instagram` to form links to automatically tag leads
+2. **UTM parameter capture**: Automatically captures `utm_source`, `utm_medium`, `utm_campaign` from public submissions
+3. **Referrer tracking**: Captures the referring page URL when available
+4. **Source normalization**: All sources are normalized (lowercase, trimmed, max 50 chars) for consistent reporting
+5. **Filtering**: Filter leads by source via `GET /api/leads?source=instagram`
+6. **Analytics**: View leads-by-source breakdown in `GET /api/analytics/summary`
+
+**Known sources:**
+
+`website`, `instagram`, `facebook`, `google`, `linkedin`, `twitter`, `tiktok`, `email`, `phone`, `referral`, `walk-in`, `other`
+
+**Example form URL with source:**
+
+```
+https://yourdomain.com/lead-form?key=nw_live_abc123&source=instagram
+```
+
+**Link builder:**
+
+The Business settings page includes an interactive link builder where owners can select a source and copy a ready-made form link for that channel.
+
 ## Postman Collection
 
 Import the ready-made collection:
@@ -92,13 +119,15 @@ Runs the full Postman-style flow against an in-memory MongoDB.
 | POST | `/api/leads` | `x-api-key` header | Public lead submission (counts toward limit) |
 | POST | `/api/leads/owner` | JWT | Create lead manually (doesn't count toward limit) |
 | GET | `/api/leads` | JWT | List own leads |
+| GET | `/api/leads?source=instagram` | JWT | Filter leads by source |
 | GET | `/api/leads/:id` | JWT | Get one lead |
 | PATCH | `/api/leads/:id` | JWT | Update lead details |
 | PATCH | `/api/leads/:id/status` | JWT | Update lead status |
 | DELETE | `/api/leads/:id` | JWT | Delete lead |
 | POST | `/api/leads/:id/notes` | JWT | Add follow-up note |
 | DELETE | `/api/leads/:id/notes/:noteId` | JWT | Delete follow-up note |
-| GET | `/api/analytics/summary` | JWT | Dashboard stats |
+| GET | `/api/analytics/summary` | JWT | Dashboard stats with source breakdown |
+| GET | `/api/sources` | None | Get list of known source options |
 
 ---
 

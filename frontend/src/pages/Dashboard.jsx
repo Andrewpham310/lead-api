@@ -85,6 +85,33 @@ export default function Dashboard() {
               />
             </div>
           </div>
+
+          {stats.leadsBySource && stats.leadsBySource.length > 0 && (
+            <div className="panel">
+              <h2>Leads by source</h2>
+              <p className="muted" style={{ marginBottom: '1rem' }}>
+                Track where your leads are coming from
+              </p>
+              <div className="source-breakdown">
+                {stats.leadsBySource.map((item) => (
+                  <div key={item.source} className="source-breakdown-item">
+                    <div className="source-breakdown-header">
+                      <span className="source-badge">{item.source}</span>
+                      <strong>{item.count}</strong>
+                    </div>
+                    <div className="source-breakdown-bar">
+                      <div
+                        className="source-breakdown-fill"
+                        style={{
+                          width: `${(item.count / stats.totalLeads) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 

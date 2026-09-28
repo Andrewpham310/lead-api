@@ -42,6 +42,22 @@ const leadSchema = new mongoose.Schema(
       type: String,
       default: 'website',
     },
+    utmSource: {
+      type: String,
+      trim: true,
+    },
+    utmMedium: {
+      type: String,
+      trim: true,
+    },
+    utmCampaign: {
+      type: String,
+      trim: true,
+    },
+    referrer: {
+      type: String,
+      trim: true,
+    },
     status: {
       type: String,
       enum: ['new', 'contacted', 'booked', 'lost'],

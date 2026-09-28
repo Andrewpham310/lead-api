@@ -9,6 +9,18 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { getLeadFormUrl } from '../utils/leadFormUrl';
 
+const SOURCE_OPTIONS = [
+  'website',
+  'instagram',
+  'facebook',
+  'google',
+  'linkedin',
+  'twitter',
+  'tiktok',
+  'email',
+  'other',
+];
+
 export default function Business() {
   const { token } = useAuth();
   const [business, setBusiness] = useState(null);
@@ -20,6 +32,9 @@ export default function Business() {
   const [submitting, setSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [selectedSource, setSelectedSource] = useState('instagram');
+  const [customSource, setCustomSource] = useState('');
+  const [sourceLinkCopied, setSourceLinkCopied] = useState(false);
 
   useEffect(() => {
     getMyBusiness(token)
@@ -96,6 +111,38 @@ export default function Business() {
     await navigator.clipboard.writeText(getLeadFormUrl(business.apiKey));
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 2000);
+  };
+
+  const getSourceFormUrl = () => {
+    if (!business?.apiKey) return '';
+    const source =
+      selectedSource === 'other' && customSource ? customSource : selectedSource;
+    return `${getLeadFormUrl(business.apiKey)}&source=${encodeURIComponent(source)}`;
+  };
+
+  const copySourceFormLink = async () => {
+    await navigator.clipboard.writeText(getSourceFormUrl());
+    setSourceLinkCopied(true);
+    setTimeout(() => setSourceLinkCopied(false), 2000);
+  };
+
+  const getApiExample = () => {
+    const source =
+      selectedSource === 'other' && customSource ? customSource : selectedSource;
+    return `fetch('${window.location.origin}/api/leads', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'x-api-key': '${business?.apiKey}'
+  },
+  body: JSON.stringify({
+    name: 'Customer Name',
+    email: 'customer@example.com',
+    phone: '1234567890',
+    message: 'Customer inquiry',
+    source: '${source}'
+  })
+})`;
   };
 
   const formUrl = business?.apiKey ? getLeadFormUrl(business.apiKey) : '';
@@ -211,6 +258,82 @@ export default function Business() {
             <Link to="/leads" className="btn btn-secondary">
               View leads
             </Link>
+          </div>
+        </div>
+      )}
+
+      {business && (
+        <div className="panel">
+          <h2>Source tracking link builder</h2>
+          <p className="muted">
+            Create form links for specific channels (Instagram, Facebook, etc.) to track where
+            your leads come from. The source is automatically added to each lead.
+          </p>
+
+          <div className="form">
+            <label>
+              Source channel
+              <select
+                value={selectedSource}
+                onChange={(e) => {
+                  setSelectedSource(e.target.value);
+                  setSourceLinkCopied(false);
+                }}
+              >
+                {SOURCE_OPTIONS.map((src) => (
+                  <option key={src} value={src}>
+                    {src}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {selectedSource === 'other' && (
+              <label>
+                Custom source name
+                <input
+                  type="text"
+                  value={customSource}
+                  onChange={(e) => {
+                    setCustomSource(e.target.value);
+                    setSourceLinkCopied(false);
+                  }}
+                  placeholder="e.g., google-ads, linkedin-post"
+                />
+              </label>
+            )}
+
+            <label>
+              Form link with source
+              <div className="api-key-box" style={{ marginTop: '0.5rem' }}>
+                <code style={{ fontSize: '0.875rem' }}>{getSourceFormUrl()}</code>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={copySourceFormLink}
+                >
+                  {sourceLinkCopied ? 'Copied!' : 'Copy'}
+                </button>
+              </div>
+            </label>
+
+            <details style={{ marginTop: '1rem' }}>
+              <summary style={{ cursor: 'pointer', color: 'var(--text-muted)' }}>
+                API example with source
+              </summary>
+              <pre
+                style={{
+                  background: 'var(--bg-elevated)',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  overflow: 'auto',
+                  marginTop: '0.75rem',
+                  fontSize: '0.875rem',
+                }}
+              >
+                <code>{getApiExample()}</code>
+              </pre>
+            </details>
           </div>
         </div>
       )}

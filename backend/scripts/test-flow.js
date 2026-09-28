@@ -101,7 +101,7 @@ const run = async () => {
 
   const apiKey = business.data.apiKey;
 
-  // 6. Submit lead (public)
+  // 6. Submit lead (public with source and UTM params)
   const submitLead = await request(baseUrl, 'POST', '/api/leads', {
     headers: { 'x-api-key': apiKey },
     body: {
@@ -109,12 +109,16 @@ const run = async () => {
       phone: '4161234567',
       email: 'john@example.com',
       message: 'I want to book a manicure this Friday',
-      source: 'website',
+      source: 'INSTAGRAM',
+      utmSource: 'instagram',
+      utmMedium: 'social',
+      utmCampaign: 'spring2026',
+      referrer: 'https://instagram.com',
     },
   });
   assert(submitLead.status === 201, 'Submit lead failed');
   assert(submitLead.data.success === true, 'Lead submit success flag missing');
-  console.log('✓ POST /api/leads (public)');
+  console.log('✓ POST /api/leads (public with source & UTM)');
 
   // 7. Invalid API key
   const invalidKey = await request(baseUrl, 'POST', '/api/leads', {
@@ -127,13 +131,15 @@ const run = async () => {
   assert(invalidKey.status === 401, 'Invalid API key should return 401');
   console.log('✓ POST /api/leads with invalid API key (401)');
 
-  // 8. List leads
+  // 8. List leads & verify source normalization
   const leads = await request(baseUrl, 'GET', '/api/leads', {
     headers: { Authorization: `Bearer ${token}` },
   });
   assert(leads.status === 200, 'Get leads failed');
   assert(Array.isArray(leads.data) && leads.data.length === 1, 'Expected 1 lead');
-  console.log('✓ GET /api/leads');
+  assert(leads.data[0].source === 'instagram', 'Source should be normalized to lowercase');
+  assert(leads.data[0].utmSource === 'instagram', 'UTM source should be captured');
+  console.log('✓ GET /api/leads (source normalized to lowercase)');
 
   const leadId = leads.data[0]._id;
 
@@ -158,7 +164,7 @@ const run = async () => {
   assert(updateStatus.data.status === 'contacted', 'Status not updated');
   console.log('✓ PATCH /api/leads/:id/status');
 
-  // 11. Analytics
+  // 11. Analytics with source breakdown
   const analytics = await request(baseUrl, 'GET', '/api/analytics/summary', {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -166,22 +172,49 @@ const run = async () => {
   assert(analytics.data.totalLeads === 1, 'totalLeads should be 1');
   assert(analytics.data.contactedLeads === 1, 'contactedLeads should be 1');
   assert(analytics.data.usageThisMonth === 1, 'usageThisMonth should be 1');
-  console.log('✓ GET /api/analytics/summary');
+  assert(Array.isArray(analytics.data.leadsBySource), 'leadsBySource should be an array');
+  assert(analytics.data.leadsBySource.length === 1, 'Should have 1 source');
+  assert(analytics.data.leadsBySource[0].source === 'instagram', 'Source should be instagram');
+  assert(analytics.data.leadsBySource[0].count === 1, 'Instagram count should be 1');
+  console.log('✓ GET /api/analytics/summary (with source breakdown)');
 
-  // 12. Create lead as owner (manual entry)
+  // 12. Create lead as owner (manual entry with different source)
   const createOwnerLead = await request(baseUrl, 'POST', '/api/leads/owner', {
     headers: { Authorization: `Bearer ${token}` },
     body: {
       name: 'Jane Doe',
       phone: '4169876543',
       email: 'jane@example.com',
-      source: 'instagram',
+      source: 'FACEBOOK',
     },
   });
   assert(createOwnerLead.status === 201, 'Create owner lead failed');
-  console.log('✓ POST /api/leads/owner (manual entry)');
+  assert(createOwnerLead.data.source === 'facebook', 'Source should be normalized');
+  console.log('✓ POST /api/leads/owner (manual entry, source normalized)');
 
   const ownerLeadId = createOwnerLead.data._id;
+
+  // 12b. Filter leads by source
+  const filterInstagram = await request(baseUrl, 'GET', '/api/leads?source=instagram', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert(filterInstagram.status === 200, 'Filter by source failed');
+  assert(filterInstagram.data.length === 1, 'Should have 1 instagram lead');
+  assert(filterInstagram.data[0].source === 'instagram', 'Should be instagram lead');
+  console.log('✓ GET /api/leads?source=instagram (filter by source)');
+
+  const filterFacebook = await request(baseUrl, 'GET', '/api/leads?source=facebook', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert(filterFacebook.status === 200, 'Filter by facebook failed');
+  assert(filterFacebook.data.length === 1, 'Should have 1 facebook lead');
+  console.log('✓ GET /api/leads?source=facebook (filter by source)');
+
+  const allLeadsCheck = await request(baseUrl, 'GET', '/api/leads', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert(allLeadsCheck.data.length === 2, 'Should have 2 total leads');
+  console.log('✓ GET /api/leads (no filter, returns all)');
 
   // 13. Verify manual lead doesn't count toward API usage
   const analyticsAfterManual = await request(
@@ -295,6 +328,25 @@ const run = async () => {
   });
   assert(crossNote.status === 404, 'Cross-business note should return 404');
   console.log('✓ Cross-business note correctly rejected (404)');
+
+  // 21b. Cross-business filter isolation
+  const crossFilter = await request(baseUrl, 'GET', '/api/leads?source=facebook', {
+    headers: { Authorization: `Bearer ${token2}` },
+  });
+  assert(crossFilter.status === 200, 'Cross-business filter should return 200');
+  assert(crossFilter.data.length === 0, 'Cross-business should see 0 leads');
+  console.log('✓ Cross-business source filter correctly isolated');
+
+  // 21c. Analytics source breakdown updated
+  const analyticsUpdated = await request(baseUrl, 'GET', '/api/analytics/summary', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  assert(analyticsUpdated.data.leadsBySource.length === 2, 'Should have 2 sources');
+  const instagramSource = analyticsUpdated.data.leadsBySource.find((s) => s.source === 'instagram');
+  const facebookSource = analyticsUpdated.data.leadsBySource.find((s) => s.source === 'facebook');
+  assert(instagramSource && instagramSource.count === 1, 'Instagram should have 1 lead');
+  assert(facebookSource && facebookSource.count === 1, 'Facebook should have 1 lead');
+  console.log('✓ Analytics source breakdown correctly updated');
 
   // 22. Delete original lead
   const deleteLead = await request(baseUrl, 'DELETE', `/api/leads/${leadId}`, {

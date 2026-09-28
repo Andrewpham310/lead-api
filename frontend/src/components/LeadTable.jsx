@@ -37,7 +37,9 @@ export default function LeadTable({ leads, onStatusChange, onDelete, onView }) {
                 </div>
               </td>
               <td className="message-cell">{lead.message || <span className="muted">—</span>}</td>
-              <td>{lead.source}</td>
+              <td>
+                <span className="source-badge">{lead.source}</span>
+              </td>
               <td onClick={(e) => e.stopPropagation()}>
                 <select
                   className={`status-select status-${lead.status}`}

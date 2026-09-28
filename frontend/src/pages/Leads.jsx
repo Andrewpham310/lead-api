@@ -15,25 +15,45 @@ import LeadDetail from '../components/LeadDetail';
 export default function Leads() {
   const { token } = useAuth();
   const [leads, setLeads] = useState([]);
+  const [allLeads, setAllLeads] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
   const [viewingLead, setViewingLead] = useState(null);
+  const [sourceFilter, setSourceFilter] = useState('');
+  const [uniqueSources, setUniqueSources] = useState([]);
 
-  const loadLeads = async () => {
+  const loadLeads = async (source = '') => {
     try {
-      const data = await getLeads(token);
+      const url = source ? `/api/leads?source=${encodeURIComponent(source)}` : '/api/leads';
+      const data = await getLeads(token, url);
       setLeads(data);
+      
+      if (!source) {
+        setAllLeads(data);
+        const sources = [...new Set(data.map((lead) => lead.source))].sort();
+        setUniqueSources(sources);
+      }
     } catch (err) {
       if (err.status === 404) {
         setLeads([]);
+        if (!source) {
+          setAllLeads([]);
+          setUniqueSources([]);
+        }
       } else {
         setError(err.message || 'Failed to load leads');
       }
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSourceFilter = (source) => {
+    setSourceFilter(source);
+    setLoading(true);
+    loadLeads(source);
   };
 
   useEffect(() => {
@@ -106,13 +126,32 @@ export default function Leads() {
           <button type="button" className="btn btn-primary" onClick={() => setShowAddForm(true)}>
             Add Lead
           </button>
-          <button type="button" className="btn btn-secondary" onClick={loadLeads}>
+          <button type="button" className="btn btn-secondary" onClick={() => loadLeads()}>
             Refresh
           </button>
         </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
+
+      {uniqueSources.length > 0 && (
+        <div className="filter-bar">
+          <label className="filter-label">
+            Filter by source:
+            <select value={sourceFilter} onChange={(e) => handleSourceFilter(e.target.value)}>
+              <option value="">All sources ({allLeads.length})</option>
+              {uniqueSources.map((source) => {
+                const count = allLeads.filter((lead) => lead.source === source).length;
+                return (
+                  <option key={source} value={source}>
+                    {source} ({count})
+                  </option>
+                );
+              })}
+            </select>
+          </label>
+        </div>
+      )}
 
       {loading ? (
         <p className="muted">Loading leads...</p>
