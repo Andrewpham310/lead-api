@@ -53,7 +53,7 @@ export default function Leads() {
       <div className="page-header">
         <div>
           <h1>Leads</h1>
-          <p className="muted">Manage inquiries from your website</p>
+          <p className="muted">People who wrote in. Update the status after you reply or book them.</p>
         </div>
         <button type="button" className="btn btn-secondary" onClick={loadLeads}>
           Refresh

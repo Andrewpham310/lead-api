@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import GoogleCallback from './pages/GoogleCallback';
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
 import Business from './pages/Business';
@@ -46,6 +47,8 @@ function AppRoutes() {
           </PublicOnlyRoute>
         }
       />
+
+      <Route path="/auth/google/callback" element={<GoogleCallback />} />
 
       <Route path="/lead-form" element={<LeadForm />} />
 

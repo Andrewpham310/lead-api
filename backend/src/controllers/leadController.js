@@ -1,32 +1,58 @@
 const Business = require('../models/Business');
 const Lead = require('../models/Lead');
 const { getCurrentMonthKey } = require('./businessController');
+const { LEAD_SUBMITTED_RESPONSE } = require('../middleware/leadSpamMiddleware');
 
 const getBusinessForOwner = async (ownerId) => {
   return Business.findOne({ ownerId });
 };
 
-// Reset usage counter when a new calendar month starts
-const ensureCurrentMonthUsage = async (business) => {
-  const currentMonth = getCurrentMonthKey();
+// Atomically reserve one lead slot for this month. Returns the updated business,
+// or null when the monthly limit is already reached. Concurrent submissions can
+// never push usageThisMonth past monthlyLimit.
+const reserveMonthlySlot = async (businessId, month) => {
+  // Month rollover: only the first request of a new month resets the counter.
+  await Business.updateOne(
+    { _id: businessId, usageResetMonth: { $ne: month } },
+    { $set: { usageThisMonth: 0, usageResetMonth: month } }
+  );
 
-  if (business.usageResetMonth !== currentMonth) {
-    business.usageThisMonth = 0;
-    business.usageResetMonth = currentMonth;
-    await business.save();
-  }
+  return Business.findOneAndUpdate(
+    {
+      _id: businessId,
+      usageResetMonth: month,
+      $expr: {
+        $lt: [
+          { $ifNull: ['$usageThisMonth', 0] },
+          { $ifNull: ['$monthlyLimit', Business.getMonthlyLimitForPlan('free')] },
+        ],
+      },
+    },
+    { $inc: { usageThisMonth: 1, leadCount: 1 } },
+    { new: true }
+  );
+};
 
-  return business;
+// Give the slot back when the lead could not be stored.
+const releaseMonthlySlot = async (businessId, month) => {
+  await Promise.all([
+    Business.updateOne(
+      { _id: businessId, usageResetMonth: month, usageThisMonth: { $gt: 0 } },
+      { $inc: { usageThisMonth: -1 } }
+    ),
+    Business.updateOne({ _id: businessId, leadCount: { $gt: 0 } }, { $inc: { leadCount: -1 } }),
+  ]);
 };
 
 // @desc    Submit a lead via public API key
 // @route   POST /api/leads
 const submitLead = async (req, res, next) => {
   try {
-    let business = req.business;
-    business = await ensureCurrentMonthUsage(business);
+    const businessId = req.business._id;
+    const month = getCurrentMonthKey();
+    const reserved = await reserveMonthlySlot(businessId, month);
 
-    if (business.usageThisMonth >= business.monthlyLimit) {
+    if (!reserved) {
       return res.status(403).json({
         success: false,
         message: 'Monthly lead limit reached',
@@ -35,26 +61,23 @@ const submitLead = async (req, res, next) => {
 
     const { name, phone, email, message, source } = req.body;
 
-    await Lead.create({
-      businessId: business._id,
-      name,
-      phone,
-      email,
-      message,
-      source: source || 'website',
-    });
+    try {
+      await Lead.create({
+        businessId,
+        name,
+        phone,
+        email,
+        message,
+        source: source || 'website',
+      });
+    } catch (createError) {
+      await releaseMonthlySlot(businessId, month).catch((releaseError) => {
+        console.error('Failed to release lead slot:', releaseError.message);
+      });
+      throw createError;
+    }
 
-    await Business.findByIdAndUpdate(business._id, {
-      $inc: {
-        usageThisMonth: 1,
-        leadCount: 1,
-      },
-    });
-
-    res.status(201).json({
-      success: true,
-      message: 'Lead submitted successfully',
-    });
+    res.status(201).json(LEAD_SUBMITTED_RESPONSE);
   } catch (error) {
     next(error);
   }

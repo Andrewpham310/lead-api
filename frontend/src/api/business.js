@@ -1,10 +1,10 @@
 import { apiRequest } from './client';
 
-export function createBusiness(token, { businessName, industry }) {
+export function createBusiness(token, profile) {
   return apiRequest('/api/business', {
     method: 'POST',
     token,
-    body: { businessName, industry },
+    body: profile,
   });
 }
 
@@ -12,11 +12,11 @@ export function getMyBusiness(token) {
   return apiRequest('/api/business/me', { token });
 }
 
-export function updateMyBusiness(token, { businessName, industry }) {
+export function updateMyBusiness(token, profile) {
   return apiRequest('/api/business/me', {
     method: 'PATCH',
     token,
-    body: { businessName, industry },
+    body: profile,
   });
 }
 

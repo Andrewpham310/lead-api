@@ -39,17 +39,19 @@ Open `http://localhost:5173`.
 | Variable | Description |
 |----------|-------------|
 | `VITE_API_URL` | Backend API base URL (default: `http://localhost:5000`) |
+| `VITE_TURNSTILE_SITE_KEY` | Optional Cloudflare Turnstile site key. When set, the public lead form shows a captcha. Set it together with the backend's `TURNSTILE_SECRET_KEY`. Test key: `1x00000000000000000000AA` (always passes). |
 
 ## Pages
 
 | Route | Description |
 |-------|-------------|
-| `/login` | Sign in |
-| `/register` | Create account |
+| `/login` | Sign in with email or Google |
+| `/register` | Create account or continue with Google |
+| `/auth/google/callback` | Completes Google sign-in |
 | `/lead-form?key=<apiKey>` | Public lead capture form |
 | `/` | Dashboard overview |
 | `/leads` | Manage leads |
-| `/business` | Business profile and API key |
+| `/business` | Business profile, API key, and Google Business Profile |
 
 ## Build for production
 
@@ -64,7 +66,7 @@ Deploy to Vercel with:
 | Root Directory | `frontend` |
 | Build Command | `npm run build` |
 | Output Directory | `dist` |
-| Env | `VITE_API_URL` = your Render API URL (e.g. `https://lead-api-1.onrender.com`) |
+| Env | `VITE_API_URL` = your Render API URL (e.g. `https://lead-api-1.onrender.com`); optionally `VITE_TURNSTILE_SITE_KEY` |
 
 [`vercel.json`](vercel.json) rewrites all routes to `index.html` so React Router pages like `/lead-form` work when opened directly.
 

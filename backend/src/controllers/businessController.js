@@ -1,15 +1,46 @@
 const Business = require('../models/Business');
 const generateApiKey = require('../utils/generateApiKey');
+const { applyProfileFields } = require('../utils/businessProfile');
 
 const formatBusinessResponse = (business) => ({
   id: business._id,
   businessName: business.businessName,
   industry: business.industry,
+  address: business.address || '',
+  phone: business.phone || '',
+  website: business.website || '',
+  serviceCatalog: (business.serviceCatalog || []).map((service) => ({
+    id: service._id,
+    name: service.name,
+    description: service.description || '',
+    price: service.price || '',
+  })),
+  businessHours: (business.businessHours || []).map((period) => ({
+    day: period.day,
+    closed: Boolean(period.closed),
+    open: period.open || '',
+    close: period.close || '',
+  })),
   apiKey: business.apiKey,
+  requireCaptcha: business.requireCaptcha !== false,
+  captchaEnabled: Boolean(process.env.TURNSTILE_SECRET_KEY),
   plan: business.plan,
   monthlyLimit: business.monthlyLimit,
   usageThisMonth: business.usageThisMonth,
   leadCount: business.leadCount,
+  googleLocationId: business.googleLocationId || null,
+  googleProfile: business.googleProfile?.lastSyncedAt
+    ? {
+        name: business.googleProfile.name,
+        category: business.googleProfile.category || '',
+        address: business.googleProfile.address || '',
+        phone: business.googleProfile.phone || '',
+        website: business.googleProfile.website || '',
+        hours: business.googleProfile.hours || [],
+        mapsUri: business.googleProfile.mapsUri || '',
+        lastSyncedAt: business.googleProfile.lastSyncedAt || null,
+      }
+    : null,
 });
 
 const createBusinessWithUniqueApiKey = async (data, maxRetries = 3) => {
@@ -43,18 +74,20 @@ const createBusiness = async (req, res, next) => {
       });
     }
 
-    const { businessName, industry } = req.body;
+    const { businessName } = req.body;
     const plan = 'free';
     const monthlyLimit = Business.getMonthlyLimitForPlan(plan);
-
-    const business = await createBusinessWithUniqueApiKey({
+    const businessData = {
       ownerId: req.user.id,
       businessName,
-      industry,
       plan,
       monthlyLimit,
       usageResetMonth: getCurrentMonthKey(),
-    });
+    };
+
+    applyProfileFields(businessData, req.body);
+
+    const business = await createBusinessWithUniqueApiKey(businessData);
 
     res.status(201).json(formatBusinessResponse(business));
   } catch (error) {
@@ -94,14 +127,16 @@ const updateMyBusiness = async (req, res, next) => {
       });
     }
 
-    const { businessName, industry } = req.body;
+    const { businessName } = req.body;
 
     if (businessName !== undefined) {
       business.businessName = businessName;
     }
 
-    if (industry !== undefined) {
-      business.industry = industry;
+    applyProfileFields(business, req.body);
+
+    if (typeof req.body.requireCaptcha === 'boolean') {
+      business.requireCaptcha = req.body.requireCaptcha;
     }
 
     await business.save();
@@ -164,4 +199,5 @@ module.exports = {
   updateMyBusiness,
   regenerateApiKey,
   getCurrentMonthKey,
+  formatBusinessResponse,
 };

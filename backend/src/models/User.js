@@ -17,8 +17,29 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
       minlength: 6,
+      required: [
+        function passwordRequired() {
+          return this.authProvider !== 'google' && !this.googleId;
+        },
+        'Password is required',
+      ],
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    authProvider: {
+      type: String,
+      enum: ['local', 'google'],
+      default: 'local',
+    },
+    // Bumped to invalidate every JWT issued before (e.g. when a Google login takes
+    // over an unverified email/password account).
+    tokenVersion: {
+      type: Number,
+      default: 0,
     },
     role: {
       type: String,
@@ -32,7 +53,7 @@ const userSchema = new mongoose.Schema(
 
 // Hash password before saving when it has been changed
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) {
+  if (!this.password || !this.isModified('password')) {
     return next();
   }
 
@@ -42,6 +63,10 @@ userSchema.pre('save', async function (next) {
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {
+  if (!this.password) {
+    return false;
+  }
+
   return bcrypt.compare(enteredPassword, this.password);
 };
 

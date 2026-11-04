@@ -1,5 +1,9 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+export function apiBaseUrl() {
+  return API_URL;
+}
+
 export async function apiRequest(path, options = {}) {
   const { token, body, headers = {}, ...rest } = options;
 

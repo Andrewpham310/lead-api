@@ -1,11 +1,16 @@
-const STATUS_OPTIONS = ['new', 'contacted', 'booked', 'lost'];
+const STATUS_OPTIONS = [
+  { value: 'new', label: 'New' },
+  { value: 'contacted', label: 'Contacted' },
+  { value: 'booked', label: 'Booked' },
+  { value: 'lost', label: 'Lost' },
+];
 
 export default function LeadTable({ leads, onStatusChange, onDelete }) {
   if (!leads.length) {
     return (
       <div className="empty-state">
-        <h3>No leads yet</h3>
-        <p>Share your API key on your website to start collecting inquiries.</p>
+        <h3>No messages yet</h3>
+        <p>Share your contact link so customers can reach you. New messages will appear here.</p>
       </div>
     );
   }
@@ -45,8 +50,8 @@ export default function LeadTable({ leads, onStatusChange, onDelete }) {
                   onChange={(e) => onStatusChange(lead._id, e.target.value)}
                 >
                   {STATUS_OPTIONS.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
+                    <option key={status.value} value={status.value}>
+                      {status.label}
                     </option>
                   ))}
                 </select>

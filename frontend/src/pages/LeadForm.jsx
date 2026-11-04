@@ -1,15 +1,22 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { submitLeadPublic } from '../api/leads';
+import TurnstileWidget from '../components/TurnstileWidget';
+import { TURNSTILE_SITE_KEY } from '../utils/turnstile';
 
 export default function LeadForm() {
   const [searchParams] = useSearchParams();
   const apiKey = searchParams.get('key') || '';
+  const captchaEnabled = Boolean(TURNSTILE_SITE_KEY);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  // Honeypot: hidden from people, often filled in by bots.
+  const [companyUrl, setCompanyUrl] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [captchaReset, setCaptchaReset] = useState(0);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -17,17 +24,34 @@ export default function LeadForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (captchaEnabled && !turnstileToken) {
+      setError('Please complete the captcha check.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
-      await submitLeadPublic(apiKey, { name, phone, email, message });
+      await submitLeadPublic(apiKey, {
+        name,
+        phone,
+        email,
+        message,
+        companyUrl,
+        turnstileToken: captchaEnabled ? turnstileToken : undefined,
+      });
       setSubmitted(true);
       setName('');
       setPhone('');
       setEmail('');
       setMessage('');
+      setCompanyUrl('');
+      setTurnstileToken('');
     } catch (err) {
       setError(err.message || 'Failed to submit. Please try again.');
+      // Captcha tokens are single-use: get a fresh one for the next attempt.
+      if (captchaEnabled) setCaptchaReset((count) => count + 1);
     } finally {
       setSubmitting(false);
     }
@@ -39,8 +63,7 @@ export default function LeadForm() {
         <div className="lead-form-card">
           <h1>Contact us</h1>
           <div className="alert alert-error">
-            This form link is invalid or missing an API key. Ask the business owner for
-            the correct link.
+            This contact link is incomplete. Ask the business for the correct link.
           </div>
         </div>
       </div>
@@ -72,7 +95,7 @@ export default function LeadForm() {
         <div className="lead-form-header">
           <span className="brand-mark">NW</span>
           <h1>Get in touch</h1>
-          <p className="muted">Send us a message and we&apos;ll respond as soon as we can.</p>
+          <p className="muted">Send a message. We&apos;ll reply as soon as we can.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="form">
@@ -120,7 +143,33 @@ export default function LeadForm() {
             />
           </label>
 
-          <button type="submit" className="btn btn-primary" disabled={submitting}>
+          <div className="form-honeypot" aria-hidden="true">
+            <label>
+              Company website (leave blank)
+              <input
+                type="text"
+                name="company_url"
+                value={companyUrl}
+                onChange={(e) => setCompanyUrl(e.target.value)}
+                tabIndex={-1}
+                autoComplete="off"
+              />
+            </label>
+          </div>
+
+          {captchaEnabled && (
+            <TurnstileWidget
+              onToken={setTurnstileToken}
+              onError={setError}
+              resetSignal={captchaReset}
+            />
+          )}
+
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={submitting || (captchaEnabled && !turnstileToken)}
+          >
             {submitting ? 'Sending...' : 'Send message'}
           </button>
         </form>

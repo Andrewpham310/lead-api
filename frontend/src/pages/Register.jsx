@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 import { useAuth } from '../context/AuthContext';
 
 export default function Register() {
@@ -31,8 +32,9 @@ export default function Register() {
       <div className="auth-card">
         <div className="auth-header">
           <span className="brand-mark">NW</span>
-          <h1>Create account</h1>
-          <p>Start capturing leads from your website</p>
+          <p className="brand-name">Next Waves</p>
+          <h1>Create your account</h1>
+          <p>A simple place to collect customer messages.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="form">
@@ -76,6 +78,9 @@ export default function Register() {
             {submitting ? 'Creating account...' : 'Create account'}
           </button>
         </form>
+
+        <div className="auth-divider">or</div>
+        <GoogleSignInButton />
 
         <p className="auth-footer">
           Already have an account? <Link to="/login">Sign in</Link>

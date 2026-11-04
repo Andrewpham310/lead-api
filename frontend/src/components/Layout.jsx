@@ -17,16 +17,23 @@ export default function Layout() {
           <span className="brand-mark">NW</span>
           <div>
             <strong>Next Waves</strong>
-            <p>Lead Dashboard</p>
+            <p>For beauty businesses</p>
           </div>
         </div>
 
         <nav className="nav">
           <NavLink to="/" end>
-            Overview
+            <span className="nav-label">Overview</span>
+            <span className="nav-hint">Your numbers</span>
           </NavLink>
-          <NavLink to="/leads">Leads</NavLink>
-          <NavLink to="/business">Business</NavLink>
+          <NavLink to="/leads">
+            <span className="nav-label">Leads</span>
+            <span className="nav-hint">Customer messages</span>
+          </NavLink>
+          <NavLink to="/business">
+            <span className="nav-label">Business</span>
+            <span className="nav-hint">Profile and contact link</span>
+          </NavLink>
         </nav>
 
         <div className="sidebar-footer">

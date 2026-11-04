@@ -41,7 +41,7 @@ export default function Dashboard() {
       <div className="page-header">
         <div>
           <h1>Welcome to Next Waves</h1>
-          <p className="muted">Set up your business profile to start collecting leads.</p>
+          <p className="muted">Add your business once. Customer messages will show up here.</p>
         </div>
         <Link to="/business" className="btn btn-primary">
           Set up business
@@ -55,7 +55,7 @@ export default function Dashboard() {
       <div className="page-header">
         <div>
           <h1>{business.businessName}</h1>
-          <p className="muted">Overview of your lead activity</p>
+          <p className="muted">A simple look at your customer messages</p>
         </div>
       </div>
 
@@ -67,13 +67,13 @@ export default function Dashboard() {
 
           <div className="usage-card">
             <div>
-              <p className="label">Monthly usage</p>
+              <p className="label">Messages this month</p>
               <strong>
-                {stats.usageThisMonth} / {stats.monthlyLimit} leads
+                {stats.usageThisMonth} / {stats.monthlyLimit}
               </strong>
             </div>
             <div>
-              <p className="label">Plan</p>
+              <p className="label">Your plan</p>
               <strong className="plan-badge">{stats.plan}</strong>
             </div>
             <div className="usage-bar">
@@ -90,12 +90,14 @@ export default function Dashboard() {
 
       <div className="quick-actions">
         <Link to="/leads" className="action-card">
-          <h3>View leads</h3>
-          <p>See and update customer inquiries</p>
+          <h3>See your messages</h3>
+          <p>Read what customers sent and mark who you already contacted.</p>
+          <span className="action-go">Open</span>
         </Link>
         <Link to="/business" className="action-card">
-          <h3>Business settings</h3>
-          <p>Manage profile and API key</p>
+          <h3>Your business</h3>
+          <p>Hours, services, and the link customers use to reach you.</p>
+          <span className="action-go">Open</span>
         </Link>
       </div>
     </div>

@@ -1,10 +1,22 @@
 import { apiRequest } from './client';
 
-export function submitLeadPublic(apiKey, { name, phone, email, message, source }) {
+export function submitLeadPublic(
+  apiKey,
+  { name, phone, email, message, source, companyUrl, turnstileToken }
+) {
   return apiRequest('/api/leads', {
     method: 'POST',
     headers: { 'x-api-key': apiKey },
-    body: { name, phone, email, message, source: source || 'website' },
+    body: {
+      name,
+      phone,
+      email,
+      message,
+      source: source || 'website',
+      // Honeypot: always empty for real visitors.
+      company_url: companyUrl || '',
+      ...(turnstileToken ? { turnstileToken } : {}),
+    },
   });
 }
 
